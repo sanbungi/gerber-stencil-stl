@@ -8,6 +8,46 @@
   const ARC_TOL = 0.004;  // mm, chord tolerance for arcs and circles
   const TAU = Math.PI * 2;
 
+  // ---------- messages ----------
+  const MESSAGES = {
+    en: {
+      macroPrim: 'Ignored unsupported macro primitive (code {0})',
+      noAperture: 'Undefined aperture D{0}',
+      noMacro: 'Undefined macro {0}',
+      approxDraw: 'Approximated a draw made with a non-circular aperture',
+      macroDraw: 'Ignored a draw made with a macro aperture',
+      incremental: 'Incremental coordinates are not supported',
+      stepRepeat: 'Step & repeat (SR) is not supported',
+      apTransform: 'Aperture transform ({0}) is not supported',
+      negative: 'Negative image (IPNEG) is not supported',
+      edgePrefix: 'Edge: ',
+      pastePrefix: 'Paste: ',
+      openLines: '{0} unclosed outline segment(s) ignored',
+      noOutline: 'No closed board outline found. Check that the file is the Edge.Cuts Gerber.',
+      clipped: 'Trimmed apertures extending past the board outline ({0} mm²)',
+      islands: 'Filled {0} floating island(s) inside apertures',
+    },
+    ja: {
+      macroPrim: '未対応のマクロ図形 (コード {0}) を無視しました',
+      noAperture: '未定義のアパーチャ D{0}',
+      noMacro: '未定義のマクロ {0}',
+      approxDraw: '円以外のアパーチャによる線描画を近似しました',
+      macroDraw: 'マクロアパーチャでの線描画は無視しました',
+      incremental: 'インクリメンタル座標は未対応です',
+      stepRepeat: 'ステップ&リピート (SR) は未対応です',
+      apTransform: 'アパーチャ変形 ({0}) は未対応です',
+      negative: 'ネガ画像 (IPNEG) は未対応です',
+      edgePrefix: '外形: ',
+      pastePrefix: 'ペースト: ',
+      openLines: '外形に閉じていない線が {0} 本あります（無視しました）',
+      noOutline: '外形ファイルから閉じた基板外形が見つかりませんでした。Edge.Cuts レイヤーの Gerber か確認してください。',
+      clipped: '基板外形からはみ出した開口を切り詰めました ({0} mm²)',
+      islands: '開口の内側に浮いてしまう島が {0} 個あったため、開口として埋めました',
+    },
+  };
+  let lang = 'en';
+  const msg = (k, ...a) => (MESSAGES[lang] || MESSAGES.en)[k].replace(/\{(\d)\}/g, (_, i) => a[i]);
+
   // ---------- small geometry helpers (float mm) ----------
   const area = (pts) => { let a = 0; for (let i = 0, n = pts.length; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; a += p[0] * q[1] - q[0] * p[1]; } return a / 2; };
   const ccw = (pts) => (area(pts) < 0 ? pts.slice().reverse() : pts);
@@ -97,7 +137,7 @@
         prims.push({ on: false, pts: rot(circle(cx, cy, id / 2), r) });
         prims.push({ on: false, pts: rot(rect(od + 1, gap, cx, cy), r) });
         prims.push({ on: false, pts: rot(rect(gap, od + 1, cx, cy), r) });
-      } else warn('未対応のマクロ図形 (コード ' + code + ') を無視しました');
+      } else warn(msg('macroPrim', code));
     }
     return prims;
   }
@@ -118,7 +158,7 @@
     };
     const apShape = (code) => {
       if (apCache[code]) return apCache[code];
-      const ap = aps[code]; if (!ap) { warn('未定義のアパーチャ D' + code); return (apCache[code] = []); }
+      const ap = aps[code]; if (!ap) { warn(msg('noAperture', code)); return (apCache[code] = []); }
       const u = ap.unit, p = ap.params.map((q) => q * u); let prims;
       switch (ap.tpl) {
         case 'C': prims = [{ on: true, pts: circle(0, 0, p[0] / 2) }]; break;
@@ -127,7 +167,7 @@
         case 'P': prims = [{ on: true, pts: regPoly(p[0], Math.round(ap.params[1]), ap.params[2] || 0) }]; break;
         default: {
           const body = macros[ap.tpl];
-          if (!body) { warn('未定義のマクロ ' + ap.tpl); prims = []; break; }
+          if (!body) { warn(msg('noMacro', ap.tpl)); prims = []; break; }
           prims = macroPrims(body, ap.params, warn).map((pr) => ({ on: pr.on, pts: pr.pts.map(([a, b]) => [a * u, b * u]) }));
         }
       }
@@ -141,8 +181,8 @@
       const ip = [toInt(t.pts)];
       let w, et;
       if (ap.tpl === 'C') { w = ap.params[0] * ap.unit; et = CL.EndType.etOpenRound; }
-      else if (ap.tpl === 'R' || ap.tpl === 'O') { w = Math.min(ap.params[0], ap.params[1]) * ap.unit; et = ap.tpl === 'R' ? CL.EndType.etOpenSquare : CL.EndType.etOpenRound; warn('円以外のアパーチャによる線描画を近似しました'); }
-      else { warn('マクロアパーチャでの線描画は無視しました'); return; }
+      else if (ap.tpl === 'R' || ap.tpl === 'O') { w = Math.min(ap.params[0], ap.params[1]) * ap.unit; et = ap.tpl === 'R' ? CL.EndType.etOpenSquare : CL.EndType.etOpenRound; warn(msg('approxDraw')); }
+      else { warn(msg('macroDraw')); return; }
       if (w > 0) items.push({ pol: t.pol, paths: offset(ip, w / 2, et) });
     };
     const arcPts = (x0, y0, x1, y1, i, j, cw) => {
@@ -175,7 +215,7 @@
         const st0 = tok.stmts[0] || '';
         if (st0.startsWith('FS')) {
           const m = st0.match(/^FS([LTD])?([AI])?X(\d)(\d)Y(\d)(\d)/);
-          if (m) { fmt.zero = m[1] || 'L'; fmt.xi = +m[3]; fmt.xd = +m[4]; fmt.yd = +m[6]; if (m[2] === 'I') warn('インクリメンタル座標は未対応です'); }
+          if (m) { fmt.zero = m[1] || 'L'; fmt.xi = +m[3]; fmt.xd = +m[4]; fmt.yd = +m[6]; if (m[2] === 'I') warn(msg('incremental')); }
         } else if (st0.startsWith('MO')) unit = st0 === 'MOIN' ? 25.4 : 1;
         else if (st0.startsWith('AM')) macros[st0.slice(2)] = tok.stmts.slice(1);
         else if (st0.startsWith('AD')) {
@@ -185,9 +225,9 @@
           }
         } else if (st0.startsWith('LP')) { flushTrack(); pol = st0[2] === 'C' ? 'C' : 'D'; }
         else if (st0.startsWith('TF.FileFunction')) fileFunction = st0.slice(16);
-        else if (st0.startsWith('SR') && !/^SR(X1Y1)?/.test(st0.replace(/I[\d.]+J[\d.]+/, ''))) warn('ステップ&リピート (SR) は未対応です');
-        else if ((st0.startsWith('LR') && parseFloat(st0.slice(2)) !== 0) || (st0.startsWith('LM') && st0 !== 'LMN') || (st0.startsWith('LS') && parseFloat(st0.slice(2)) !== 1)) warn('アパーチャ変形 (' + st0 + ') は未対応です');
-        else if (st0.startsWith('IP') && st0 !== 'IPPOS') warn('ネガ画像 (IPNEG) は未対応です');
+        else if (st0.startsWith('SR') && !/^SR(X1Y1)?/.test(st0.replace(/I[\d.]+J[\d.]+/, ''))) warn(msg('stepRepeat'));
+        else if ((st0.startsWith('LR') && parseFloat(st0.slice(2)) !== 0) || (st0.startsWith('LM') && st0 !== 'LMN') || (st0.startsWith('LS') && parseFloat(st0.slice(2)) !== 1)) warn(msg('apTransform', st0));
+        else if (st0.startsWith('IP') && st0 !== 'IPPOS') warn(msg('negative'));
         continue;
       }
       const s = tok.s;
@@ -207,7 +247,7 @@
             if (paths.length) items.push({ pol, paths: union(paths) });
             region = null;
           } else if (g === 70) unit = 25.4; else if (g === 71) unit = 1;
-          else if (g === 91) warn('インクリメンタル座標 (G91) は未対応です');
+          else if (g === 91) warn(msg('incremental'));
         } else if (k === 'D') d = parseInt(v, 10);
         else if (k === 'M') { /* M02 end */ }
         else if (k === 'X') X = coord(v, fmt.xd); else if (k === 'Y') Y = coord(v, fmt.yd);
@@ -381,10 +421,10 @@
     const o = Object.assign({ side: 'F', thickness: 0.25, lip: true, lipHeight: 1.2, clearance: 0.15, wall: 1.6, flange: 0, shrink: 0 }, opts);
     const warnings = [];
     const eg = parseGerber(edgeText), pg = parseGerber(pasteText);
-    warnings.push(...eg.warnings.map((w) => '外形: ' + w), ...pg.warnings.map((w) => 'ペースト: ' + w));
+    warnings.push(...eg.warnings.map((w) => msg('edgePrefix') + w), ...pg.warnings.map((w) => msg('pastePrefix') + w));
     const { loops, open } = chainLoops(eg.strokes);
-    if (open.length) warnings.push('外形に閉じていない線が ' + open.length + ' 本あります（無視しました）');
-    if (!loops.length) throw new Error('外形ファイルから閉じた基板外形が見つかりませんでした。Edge.Cuts レイヤーの Gerber か確認してください。');
+    if (open.length) warnings.push(msg('openLines', open.length));
+    if (!loops.length) throw new Error(msg('noOutline'));
     let outline = loops.reduce((a, b) => (Math.abs(area(b)) > Math.abs(area(a)) ? b : a));
     outline = ccw(outline);
     const xs = outline.map((p) => p[0]), ys = outline.map((p) => p[1]);
@@ -402,10 +442,10 @@
     const inside = offset(outlineP, -0.05);
     const clipped = inter(pads, inside);
     const clippedArea = pads.reduce((s, p) => s + Math.abs(iarea(p)), 0) - clipped.reduce((s, p) => s + Math.abs(iarea(p)), 0);
-    if (clippedArea > 0.01) warnings.push('基板外形からはみ出した開口を切り詰めました (' + clippedArea.toFixed(2) + ' mm²)');
+    if (clippedArea > 0.01) warnings.push(msg('clipped', clippedArea.toFixed(2)));
     const apPolys = polysOf(clipped);
     const islands = apPolys.reduce((s, p) => s + p.holes.length, 0);
-    if (islands) warnings.push('開口の内側に浮いてしまう島が ' + islands + ' 個あったため、開口として埋めました');
+    if (islands) warnings.push(msg('islands', islands));
     const apertures = apPolys.map((p) => p.outer);
 
     // plate & lip
@@ -458,5 +498,6 @@
     };
   }
 
-  return { parseGerber, generate, detectRole, stl, chainLoops, flatten };
+  const setLang = (l) => { lang = MESSAGES[l] ? l : 'en'; };
+  return { parseGerber, generate, detectRole, stl, chainLoops, flatten, setLang };
 });

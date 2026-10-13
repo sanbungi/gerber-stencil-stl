@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gerber ステンシル STL</title>
+<title>Gerber Stencil STL</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap">
 <style>
 /* Layout: one narrow column — drop zone, thickness, download; advanced settings folded away */
@@ -20,7 +20,11 @@
 [hidden] { display: none !important; }
 body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5; }
 main { max-width: 440px; margin: 0 auto; padding-inline: 16px; padding-block: 48px; display: grid; gap: 16px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 h1 { font-size: 20px; margin: 0; }
+.lang { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.lang button { font-size: 12px; font-weight: 500; background: none; color: var(--muted); border-radius: 0; padding: 3px 10px; }
+.lang button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 .drop { background: var(--panel); border: 2px dashed var(--line); border-radius: 8px; padding: 32px 16px; text-align: center; cursor: pointer; display: grid; gap: 6px; }
 .drop:hover, .drop.over { border-color: var(--accent); }
 .drop:focus-visible, input:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -43,37 +47,42 @@ summary { cursor: pointer; color: var(--muted); }
 .adv { display: grid; gap: 10px; padding-top: 12px; }
 .adv .row label { font-weight: 400; }
 </style>
-
 </head>
 <body>
 <main>
-  <h1>Gerber ステンシル STL</h1>
+  <header>
+    <h1 data-i18n="title">Gerber Stencil STL</h1>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="ja" aria-pressed="false">日本語</button>
+    </div>
+  </header>
 
-  <div class="drop" id="drop" tabindex="0" role="button" aria-label="Gerber ファイルを選ぶ">
-    <strong>Edge_Cuts と Paste の Gerber をドロップ</strong>
-    <span class="sub">またはクリックして選択</span>
+  <div class="drop" id="drop" tabindex="0" role="button" data-i18n-aria="pick">
+    <strong data-i18n="drop">Drop the Edge_Cuts and Paste Gerbers here</strong>
+    <span class="sub" data-i18n="orClick">or click to choose files</span>
     <div class="got"><span id="gotEdge">Edge_Cuts</span><span id="gotPaste">Paste</span></div>
   </div>
   <input type="file" id="fileInput" multiple accept=".gbr,.gko,.gm1,.gtp,.gbp,.ger" hidden>
 
   <div class="row">
-    <label for="thickness">厚み</label>
+    <label for="thickness" data-i18n="thickness">Thickness</label>
     <span class="unit"><input type="number" id="thickness" value="0.25" step="0.05" min="0.05" max="2">mm</span>
   </div>
 
-  <button id="download" type="button" disabled>STL ダウンロード</button>
+  <button id="download" type="button" disabled data-i18n="download">Download STL</button>
   <p class="status" id="status" role="status"></p>
 
   <details>
-    <summary>アドバンス</summary>
+    <summary data-i18n="advanced">Advanced</summary>
     <div class="adv">
-      <div class="row"><label for="side">面</label><select id="side"><option value="F">F (表)</option><option value="B">B (裏)</option></select></div>
-      <div class="row"><label for="lip">位置合わせ枠</label><input type="checkbox" id="lip" checked></div>
-      <div class="row"><label for="lipHeight">枠の高さ</label><span class="unit"><input type="number" id="lipHeight" value="1.2" step="0.1" min="0.2" max="5">mm</span></div>
-      <div class="row"><label for="clearance">基板とのすき間</label><span class="unit"><input type="number" id="clearance" value="0.15" step="0.05" min="0" max="1">mm</span></div>
-      <div class="row"><label for="wall">枠の幅</label><span class="unit"><input type="number" id="wall" value="1.6" step="0.1" min="0.4" max="10">mm</span></div>
-      <div class="row"><label for="flange">外側のつば</label><span class="unit"><input type="number" id="flange" value="0" step="0.5" min="0" max="30">mm</span></div>
-      <div class="row"><label for="shrink">開口の縮小（片側）</label><span class="unit"><input type="number" id="shrink" value="0" step="0.01" min="-0.3" max="0.3">mm</span></div>
+      <div class="row"><label for="side" data-i18n="side">Side</label><select id="side"><option value="F" data-i18n="sideF">F (top)</option><option value="B" data-i18n="sideB">B (bottom)</option></select></div>
+      <div class="row"><label for="lip" data-i18n="lip">Alignment frame</label><input type="checkbox" id="lip" checked></div>
+      <div class="row"><label for="lipHeight" data-i18n="lipHeight">Frame height</label><span class="unit"><input type="number" id="lipHeight" value="1.2" step="0.1" min="0.2" max="5">mm</span></div>
+      <div class="row"><label for="clearance" data-i18n="clearance">Board clearance</label><span class="unit"><input type="number" id="clearance" value="0.15" step="0.05" min="0" max="1">mm</span></div>
+      <div class="row"><label for="wall" data-i18n="wall">Frame width</label><span class="unit"><input type="number" id="wall" value="1.6" step="0.1" min="0.4" max="10">mm</span></div>
+      <div class="row"><label for="flange" data-i18n="flange">Outer flange</label><span class="unit"><input type="number" id="flange" value="0" step="0.5" min="0" max="30">mm</span></div>
+      <div class="row"><label for="shrink" data-i18n="shrink">Aperture shrink (per side)</label><span class="unit"><input type="number" id="shrink" value="0" step="0.01" min="-0.3" max="0.3">mm</span></div>
     </div>
   </details>
 </main>
@@ -85,10 +94,55 @@ summary { cursor: pointer; color: var(--muted); }
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const files = {}; // edge / F / B -> {name, text}
-  let baseName = 'stencil';
+  const TEXT = {
+    en: {
+      title: 'Gerber Stencil STL', pick: 'Choose Gerber files',
+      drop: 'Drop the Edge_Cuts and Paste Gerbers here', orClick: 'or click to choose files',
+      thickness: 'Thickness', download: 'Download STL', advanced: 'Advanced',
+      side: 'Side', sideF: 'F (top)', sideB: 'B (bottom)', lip: 'Alignment frame', lipHeight: 'Frame height',
+      clearance: 'Board clearance', wall: 'Frame width', flange: 'Outer flange', shrink: 'Aperture shrink (per side)',
+      unknown: '{0} is not recognized as an Edge_Cuts or Paste Gerber',
+      noSide: 'No Paste file for side {0}', noPads: 'Side {0} has no paste apertures',
+      done: '{0} mm · {1} apertures', cancelled: 'Cancelled', failed: 'Could not save: {0}',
+    },
+    ja: {
+      title: 'Gerber ステンシル STL', pick: 'Gerber ファイルを選ぶ',
+      drop: 'Edge_Cuts と Paste の Gerber をドロップ', orClick: 'またはクリックして選択',
+      thickness: '厚み', download: 'STL ダウンロード', advanced: 'アドバンス',
+      side: '面', sideF: 'F (表)', sideB: 'B (裏)', lip: '位置合わせ枠', lipHeight: '枠の高さ',
+      clearance: '基板とのすき間', wall: '枠の幅', flange: '外側のつば', shrink: '開口の縮小（片側）',
+      unknown: '{0} は Edge_Cuts / Paste として認識できませんでした',
+      noSide: '{0} 面の Paste がありません', noPads: '{0} 面にペースト開口がありません',
+      done: '{0} mm ・ 開口 {1}', cancelled: 'キャンセルしました', failed: '保存できませんでした: {0}',
+    },
+  };
+  let lang = 'en';
+  try { if (localStorage.getItem('lang') === 'ja') lang = 'ja'; } catch {}
+  const t = (k, ...a) => TEXT[lang][k].replace(/\{(\d)\}/g, (_, i) => a[i]);
 
-  function setStatus(t, bad) { const s = $('status'); s.textContent = t; s.classList.toggle('bad', !!bad); }
+  const files = {}; // edge / F / B -> {name, text}
+  let baseName = 'stencil', status = null; // status: {key, args, bad} or {text, bad}
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    StencilCore.setLang(lang);
+    document.title = t('title');
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+    document.querySelectorAll('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === lang));
+    renderStatus();
+  }
+  document.querySelectorAll('[data-lang]').forEach((b) => b.onclick = () => {
+    lang = b.dataset.lang; try { localStorage.setItem('lang', lang); } catch {}
+    applyLang();
+  });
+
+  function setStatus(key, args = [], bad = false) { status = key ? { key, args, bad } : null; renderStatus(); }
+  function renderStatus() {
+    const s = $('status');
+    s.textContent = status ? (status.text != null ? status.text : t(status.key, ...status.args)) : '';
+    s.classList.toggle('bad', !!(status && status.bad));
+  }
   function refresh() {
     const side = $('side').value, paste = files[side] || files.F || files.B;
     $('gotEdge').classList.toggle('on', !!files.edge);
@@ -96,13 +150,13 @@ summary { cursor: pointer; color: var(--muted); }
     $('gotEdge').textContent = files.edge ? '✓ ' + files.edge.name : 'Edge_Cuts';
     $('gotPaste').textContent = paste ? (files[side] ? '✓ ' : '') + paste.name : 'Paste';
     $('download').disabled = !(files.edge && files[side]);
-    setStatus(files.edge && paste && !files[side] ? side + ' 面の Paste がありません' : '', true);
+    if (files.edge && paste && !files[side]) setStatus('noSide', [side], true); else setStatus(null);
   }
   async function handle(list) {
     for (const f of list) {
       const text = await f.text();
       const role = StencilCore.detectRole(f.name, text);
-      if (!role) { setStatus(f.name + ' は Edge_Cuts / Paste として認識できませんでした', true); return; }
+      if (!role) { setStatus('unknown', [f.name], true); return; }
       files[role] = { name: f.name, text };
       if (role === 'edge') baseName = f.name.replace(/[-_]?edge[_.\- ]?cuts.*$/i, '').replace(/\.[^.]+$/, '') || 'stencil';
       if (role === 'F' || role === 'B') $('side').value = role;
@@ -114,8 +168,8 @@ summary { cursor: pointer; color: var(--muted); }
   drop.onclick = () => fi.click();
   drop.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fi.click(); } };
   fi.onchange = () => { handle([...fi.files]); fi.value = ''; };
-  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
-  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
   drop.addEventListener('drop', (e) => handle([...e.dataTransfer.files]));
   $('side').onchange = refresh;
 
@@ -129,15 +183,15 @@ summary { cursor: pointer; color: var(--muted); }
         lipHeight: num('lipHeight', 1.2), clearance: Math.max(0, num('clearance', 0.15)),
         wall: num('wall', 1.6), flange: Math.max(0, num('flange', 0)), shrink: num('shrink', 0),
       });
-    } catch (e) { setStatus(e.message, true); return; }
-    if (!r.stats.apertures) { setStatus(side + ' 面にペースト開口がありません', true); return; }
+    } catch (e) { status = { text: e.message, bad: true }; renderStatus(); return; }
+    if (!r.stats.apertures) { setStatus('noPads', [side], true); return; }
     const name = `${baseName}_${side}_stencil_${r.options.thickness}mm`;
     const buf = StencilCore.stl(r.tris, name);
     btn.disabled = true;
     try {
       const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
       if (dl) {
-        // the viewer only saves common formats, so the STL travels inside a zip
+        // the Claude viewer only saves common formats, so the STL travels inside a zip
         const zip = new JSZip(); zip.file(name + '.stl', buf);
         await dl.save({ filename: name + '.zip', data: await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }) });
       } else {
@@ -145,12 +199,14 @@ summary { cursor: pointer; color: var(--muted); }
         document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       }
       const s = r.stats;
-      setStatus(`${s.size.w.toFixed(1)} × ${s.size.d.toFixed(1)} × ${s.size.h.toFixed(2)} mm ・ 開口 ${s.apertures}` + (r.warnings.length ? ' ・ ' + r.warnings.join(' / ') : ''));
+      status = { text: t('done', `${s.size.w.toFixed(1)} × ${s.size.d.toFixed(1)} × ${s.size.h.toFixed(2)}`, s.apertures) + (r.warnings.length ? ' · ' + r.warnings.join(' / ') : ''), bad: false };
+      renderStatus();
     } catch (e) {
-      const declined = e && e.code === 'declined';
-      setStatus(declined ? 'キャンセルしました' : '保存できませんでした: ' + ((e && (e.message || e.code)) || e), !declined);
+      if (e && e.code === 'declined') setStatus('cancelled');
+      else setStatus('failed', [(e && (e.message || e.code)) || String(e)], true);
     } finally { btn.disabled = false; }
   };
+  applyLang();
   refresh();
 })();
 </script>
